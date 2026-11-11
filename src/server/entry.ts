@@ -558,67 +558,69 @@ if (import.meta.env.PROD && process.env.VERCEL !== "1") {
 	// Last in the stack, so it sees any error the routes above pass on.
 	app.use(finalErrorHandler);
 
-	const shutdown = async (signal: string) => {
-		console.log(`Got ${signal}, shutting down gracefully...`);
-		// Scope the ERR_MODULE_NOT_FOUND suppression to the import() only.
-		// A closeConnection() failure that happens to carry the same code
-		// (unlikely but possible for wrapped errors) must not be silently
-		// swallowed - it indicates a real db-close failure worth logging.
-		let mod: { closeConnection?: () => Promise<void> | void } | null = null;
-		try {
-			const dbClient = "./db/client" + ".js";
-			// Source-literal optional module path; no request, environment, or user input reaches import().
-			// eslint-disable-next-line no-unsanitized/method
-			mod = await import(/* @vite-ignore */ dbClient);
-		} catch (error: unknown) {
-			const code = (error as { code?: string } | null)?.code;
-			if (code !== "ERR_MODULE_NOT_FOUND") {
-				console.error("ssr.shutdown.db-import-failed", {
-					error: error instanceof Error ? error.message : String(error),
-				});
-			}
-		}
-		if (mod && typeof mod.closeConnection === "function") {
+	if (process.env.VERCEL !== '1') {
+		const shutdown = async (signal: string) => {
+			console.log(`Got ${signal}, shutting down gracefully...`);
+			// Scope the ERR_MODULE_NOT_FOUND suppression to the import() only.
+			// A closeConnection() failure that happens to carry the same code
+			// (unlikely but possible for wrapped errors) must not be silently
+			// swallowed - it indicates a real db-close failure worth logging.
+			let mod: { closeConnection?: () => Promise<void> | void } | null = null;
 			try {
-				await mod.closeConnection();
-				console.log("Database connections closed");
+				const dbClient = "./db/client" + ".js";
+				// Source-literal optional module path; no request, environment, or user input reaches import().
+				// eslint-disable-next-line no-unsanitized/method
+				mod = await import(/* @vite-ignore */ dbClient);
 			} catch (error: unknown) {
-				console.error("ssr.shutdown.db-close-failed", {
-					error: error instanceof Error ? error.message : String(error),
-				});
+				const code = (error as { code?: string } | null)?.code;
+				if (code !== "ERR_MODULE_NOT_FOUND") {
+					console.error("ssr.shutdown.db-import-failed", {
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
 			}
+			if (mod && typeof mod.closeConnection === "function") {
+				try {
+					await mod.closeConnection();
+					console.log("Database connections closed");
+				} catch (error: unknown) {
+					console.error("ssr.shutdown.db-close-failed", {
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
+			}
+			process.exit(0);
+		};
+
+		(["SIGTERM", "SIGINT"] as const).forEach((signal) => {
+			process.once(signal, () => {
+				void shutdown(signal);
+			});
+		});
+
+		const rawPort = process.env.PORT || "3000";
+		const port = parseInt(rawPort, 10);
+		if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+			// parseInt("abc") returns NaN; passing that to app.listen throws
+			// synchronously before the server.on("error") handler below can catch
+			// it. Fail fast with an actionable log rather than a cryptic crash.
+			console.error("ssr.server.invalid-port", { rawPort });
+			process.exit(1);
 		}
-		process.exit(0);
-	};
-
-	(["SIGTERM", "SIGINT"] as const).forEach((signal) => {
-		process.once(signal, () => {
-			void shutdown(signal);
+		const host = process.env.HOST || "0.0.0.0";
+		const server = app.listen(port, host, () => {
+			console.log(`Server listening on http://${host}:${port}`);
 		});
-	});
-
-	const rawPort = process.env.PORT || "3000";
-	const port = parseInt(rawPort, 10);
-	if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-		// parseInt("abc") returns NaN; passing that to app.listen throws
-		// synchronously before the server.on("error") handler below can catch
-		// it. Fail fast with an actionable log rather than a cryptic crash.
-		console.error("ssr.server.invalid-port", { rawPort });
-		process.exit(1);
+		server.on("error", (err: NodeJS.ErrnoException) => {
+			console.error("ssr.server.listen-failed", {
+				port,
+				host,
+				code: err.code,
+				error: err.message,
+			});
+			process.exit(1);
+		});
 	}
-	const host = process.env.HOST || "0.0.0.0";
-	const server = app.listen(port, host, () => {
-		console.log(`Server listening on http://${host}:${port}`);
-	});
-	server.on("error", (err: NodeJS.ErrnoException) => {
-		console.error("ssr.server.listen-failed", {
-			port,
-			host,
-			code: err.code,
-			error: err.message,
-		});
-		process.exit(1);
-	});
 }
 
 export default app;
