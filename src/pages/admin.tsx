@@ -1281,7 +1281,7 @@ export default function AdminPage() {
                       <img
                         src={product.imageThumbnail || product.image}
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }}
                       />
                     </div>
