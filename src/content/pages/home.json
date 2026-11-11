@@ -1,0 +1,16 @@
+{
+  "hero": {
+    "title": "Katalog Stok Produk",
+    "subtitle": "Temukan produk impian Anda — cek stok & harga terkini"
+  },
+  "search": {
+    "placeholder": "Cari produk..."
+  },
+  "empty": {
+    "title": "Produk tidak ditemukan",
+    "subtitle": "Coba kata kunci lain atau ubah filter kategori"
+  },
+  "fab": {
+    "label": "Tanya via WhatsApp"
+  }
+}

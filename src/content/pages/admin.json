@@ -1,0 +1,33 @@
+{
+  "login": {
+    "title": "Panel Admin",
+    "subtitle": "Masukkan PIN 6 digit untuk masuk"
+  },
+  "dashboard": {
+    "title": "Panel Admin",
+    "subtitle": "StokProduk",
+    "addButton": "Tambah Produk",
+    "logoutButton": "Keluar"
+  },
+  "stats": {
+    "total": "Total Produk",
+    "available": "Tersedia",
+    "outOfStock": "Stok Habis",
+    "categories": "Kategori"
+  },
+  "form": {
+    "addTitle": "Tambah Produk",
+    "editTitle": "Edit Produk",
+    "saveButton": "Simpan Perubahan",
+    "addButton": "Tambah Produk"
+  },
+  "delete": {
+    "title": "Hapus Produk?",
+    "subtitle": "Tindakan ini tidak dapat dibatalkan.",
+    "confirm": "Hapus",
+    "cancel": "Batal"
+  },
+  "empty": {
+    "message": "Belum ada produk. Tambahkan produk pertama Anda!"
+  }
+}
