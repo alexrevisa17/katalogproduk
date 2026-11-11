@@ -1,9 +1,13 @@
 import { Link } from 'react-router';
 import { Shield } from 'lucide-react';
 import { useStoreConfig } from '@/hooks/useStoreConfig';
+import { useEffect, useState } from 'react';
 
 export default function Header() {
   const config = useStoreConfig();
+  const [logoLoaded, setLogoLoaded] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+  useEffect(() => { setLogoLoaded(false); setLogoFailed(false); }, [config.logoUrl]);
 
   return (
     <header
@@ -13,12 +17,18 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0 no-underline min-w-0">
-          <img
-            src={config.logoUrl}
-            alt={config.storeName}
-            className="block h-auto w-auto object-contain"
-            style={{ maxHeight: '44px', maxWidth: '200px' }}
-          />
+          <span className="relative block h-11 w-[200px] max-w-[48vw]">
+            {!logoLoaded && !logoFailed && <span className="absolute inset-0 rounded-lg animate-pulse" style={{ background: 'hsl(var(--muted))' }} />}
+            {!logoFailed && <img
+              src={config.logoUrl}
+              alt={config.storeName}
+              className="absolute inset-0 block h-full w-full object-contain"
+              style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 180ms ease' }}
+              onLoad={() => setLogoLoaded(true)}
+              onError={() => setLogoFailed(true)}
+            />}
+            {logoFailed && <span className="flex h-full items-center font-black tracking-wide text-primary">{config.storeName}</span>}
+          </span>
         </Link>
 
         {/* Admin link */}
