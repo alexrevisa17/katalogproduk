@@ -54,24 +54,32 @@ export async function createSupabaseSignedImageUpload(mime: string) {
   const signedPath = payload.url || payload.signedURL || payload.signedUrl;
   if (!signedPath) throw new Error('Supabase tidak mengembalikan signed upload URL.');
 
-  // Supabase returns a path such as /object/upload/sign/<bucket>/<name>?token=...
-  // Build the final endpoint from our configured project origin, rather than
-  // concatenating arbitrary path prefixes (which can create a broken URL).
-  let token = payload.token;
+  // Keep the exact signed path returned by Supabase Storage. The Storage
+  // SDK constructs this as ${supabaseUrl}/storage/v1 + data.url; rebuilding
+  // the path ourselves can accidentally target a different host or route.
+  let uploadUrl: URL;
   try {
-    const returnedUrl = new URL(signedPath, `${base()}/storage/v1/`);
-    token = token || returnedUrl.searchParams.get('token') || undefined;
+    if (/^https?:\/\//i.test(signedPath)) {
+      uploadUrl = new URL(signedPath);
+    } else if (signedPath.startsWith('/storage/v1/')) {
+      uploadUrl = new URL(signedPath, base());
+    } else if (signedPath.startsWith('/')) {
+      uploadUrl = new URL(`${base()}/storage/v1${signedPath}`);
+    } else {
+      uploadUrl = new URL(`${base()}/storage/v1/${signedPath}`);
+    }
   } catch {
     throw new Error('Format signed upload URL dari Supabase tidak valid.');
   }
-  if (!token) throw new Error('Supabase tidak mengembalikan token signed upload.');
 
   const projectUrl = new URL(base());
-  const uploadUrl = new URL(
-    `/storage/v1/object/upload/sign/product-images/${encodeURIComponent(name)}`,
-    projectUrl.origin,
-  );
-  uploadUrl.searchParams.set('token', token);
+  if (uploadUrl.origin !== projectUrl.origin) {
+    throw new Error('Supabase mengembalikan alamat upload di luar domain proyek yang dikonfigurasi.');
+  }
+  if (!uploadUrl.searchParams.has('token')) {
+    if (!payload.token) throw new Error('Supabase tidak mengembalikan token signed upload.');
+    uploadUrl.searchParams.set('token', payload.token);
+  }
   return {
     uploadUrl: uploadUrl.toString(),
     publicUrl: `${base()}/storage/v1/object/public/product-images/${name}`,
