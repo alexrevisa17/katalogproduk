@@ -276,6 +276,12 @@ async function configuredLogoUrl(req: Request): Promise<string | null> {
     const url = new URL(raw.trim(), `${req.protocol}://${req.hostname}`);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
     if (url.pathname.startsWith('/api/brand-')) return null;
+    // Avoid turning this image endpoint into an arbitrary server-side fetch.
+    const allowedHosts = new Set([req.hostname.toLowerCase()]);
+    if (process.env.SUPABASE_URL) {
+      try { allowedHosts.add(new URL(process.env.SUPABASE_URL).hostname.toLowerCase()); } catch {}
+    }
+    if (!allowedHosts.has(url.hostname.toLowerCase())) return null;
     return url.toString();
   } catch {
     return null;
