@@ -76,10 +76,10 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Keep uploads below Vercel request body limits (3 MB)
-    if (file.size > 3 * 1024 * 1024) {
+    // Upload directly to Supabase Storage; this avoids Vercel's request-body limit.
+    if (file.size > 10 * 1024 * 1024) {
       setUploadStatus('error');
-      setUploadMsg('Ukuran file maksimal 3 MB');
+      setUploadMsg('Ukuran file maksimal 10 MB');
       return;
     }
 
@@ -87,28 +87,28 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
     setUploadMsg('Mengupload gambar...');
 
     try {
-      // Read as data URL then POST to server
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = ev => resolve(ev.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const res = await fetch('/api/upload', {
+      // Request a short-lived signed URL, then send the binary file directly to Supabase.
+      const signResponse = await fetch('/api/upload/sign', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dataUrl,
-          filename: file.name.replace(/.[^.]+$/, ''),
-        }),
+        body: JSON.stringify({ mime: file.type }),
       });
-
-      const json = await res.json() as { url?: string; error?: string };
-
-      if (!res.ok || !json.url) {
-        throw new Error(json.error ?? 'Upload gagal');
+      const signed = await signResponse.json() as { uploadUrl?: string; publicUrl?: string; error?: string };
+      if (!signResponse.ok || !signed.uploadUrl || !signed.publicUrl) {
+        throw new Error(signed.error ?? 'Gagal menyiapkan upload gambar');
       }
+
+      const uploadResponse = await fetch(signed.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type, 'x-upsert': 'false' },
+        body: file,
+      });
+      if (!uploadResponse.ok) {
+        const detail = await uploadResponse.text().catch(() => '');
+        throw new Error(detail.slice(0, 180) || 'Upload ke Supabase Storage gagal');
+      }
+      const json = { url: signed.publicUrl };
 
       onChange(json.url);
       setUploadStatus('done');
@@ -192,7 +192,7 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
                 <Upload size={22} />
                 <span className="text-sm">Pilih Gambar dari Perangkat</span>
                 <span className="text-muted-foreground font-semibold" style={{ fontSize: '0.72rem' }}>
-                  JPG, PNG, WebP · Maks. 3 MB
+                  JPG, PNG, WebP, GIF · Maks. 10 MB
                 </span>
               </>
             )}
@@ -816,6 +816,7 @@ function SettingsPanel({ currentConfig }: SettingsPanelProps) {
 export default function AdminPage() {
   const storeConfig = useStoreConfig();
   const [isAuth, setIsAuth] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [pin, setPin] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [lockUntil, setLockUntil] = useState(0);
@@ -837,12 +838,16 @@ export default function AdminPage() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/admin/session', { credentials: 'same-origin' })
+    fetch('/api/admin/session', { credentials: 'same-origin', cache: 'no-store' })
       .then(res => res.ok ? res.json() : { authenticated: false })
       .then((data: { authenticated?: boolean }) => {
-        if (active && data.authenticated) { setIsAuth(true); loadProducts().then(setProducts).catch(() => toast.error('Gagal memuat produk dari Supabase')); }
+        if (active && data.authenticated) {
+          setIsAuth(true);
+          loadProducts().then(setProducts).catch(() => toast.error('Gagal memuat produk dari Supabase'));
+        }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (active) setIsCheckingAuth(false); });
     return () => { active = false; };
   }, []);
 
@@ -944,6 +949,20 @@ export default function AdminPage() {
       setProducts(await loadProducts());
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Gagal mengubah status'); }
   };
+
+  // Keep the login form hidden until the server has checked the existing HttpOnly session cookie.
+  if (isCheckingAuth) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center px-4" aria-busy="true">
+        <div className="neu-card w-full max-w-sm p-8 flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-full animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+          <div className="h-5 w-40 rounded-lg animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+          <div className="h-3 w-56 rounded-lg animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+          <div className="h-11 w-full rounded-xl animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+        </div>
+      </main>
+    );
+  }
 
   // ===== PIN LOGIN SCREEN =====
   if (!isAuth) {
