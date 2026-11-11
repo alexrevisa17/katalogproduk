@@ -29,3 +29,25 @@ export async function uploadSupabaseImage(data: Buffer, mime: string) {
   if (!response.ok) throw new Error(`Supabase Storage ${response.status}: ${(await response.text()).slice(0, 300)}`);
   return `${base()}/storage/v1/object/public/product-images/${name}`;
 }
+
+
+export async function createSupabaseSignedImageUpload(mime: string) {
+  assertSupabaseConfigured();
+  const ext = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[mime];
+  if (!ext) throw new Error('Tipe gambar tidak didukung.');
+  const name = `${Date.now()}-${randomUUID()}.${ext}`;
+  const response = await fetch(`${base()}/storage/v1/object/upload/sign/product-images/${name}`, {
+    method: 'POST',
+    headers: { apikey: key(), Authorization: `Bearer ${key()}`, 'x-upsert': 'false' },
+  });
+  const payload = await response.json() as { url?: string; signedURL?: string; signedUrl?: string; token?: string; error?: string; message?: string };
+  if (!response.ok) throw new Error(`Supabase Storage ${response.status}: ${payload.message || payload.error || 'Gagal membuat signed upload URL'}`);
+  const signedPath = payload.url || payload.signedURL || payload.signedUrl;
+  if (!signedPath) throw new Error('Supabase tidak mengembalikan signed upload URL.');
+  let uploadUrl = signedPath.startsWith('http') ? signedPath : `${base()}/storage/v1${signedPath.startsWith('/') ? signedPath : `/${signedPath}`}`;
+  if (payload.token && !uploadUrl.includes('token=')) uploadUrl += `${uploadUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(payload.token)}`;
+  return {
+    uploadUrl,
+    publicUrl: `${base()}/storage/v1/object/public/product-images/${name}`,
+  };
+}
