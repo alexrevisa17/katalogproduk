@@ -1,0 +1,437 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core Colors */
+    --background: 215 24% 90%;
+    --foreground: 0 0% 4%;
+    --card: 215 24% 90%;
+    --card-foreground: 0 0% 4%;
+    --popover: 215 24% 90%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 218 91% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 99% 71%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 218 25% 83%;
+    --muted-foreground: 220 18% 51%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --border: 218 25% 83%;
+    --input: 218 25% 83%;
+    --ring: 218 91% 64%;
+
+    /* Extended Colors */
+    --chart-1: 217 94% 94%;
+    --chart-2: 217 91% 79%;
+    --chart-3: 218 91% 64%;
+    --chart-4: 218 91% 49%;
+    --chart-5: 217 91% 34%;
+
+    /* Sidebar Colors */
+    --sidebar: 218 25% 83%;
+    --sidebar-foreground: 0 0% 4%;
+    --sidebar-primary: 218 91% 64%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 271 91% 65%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 218 25% 83%;
+    --sidebar-ring: 218 91% 64%;
+
+    /* Typography */
+    --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-heading: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif: ui-serif, Georgia, "Times New Roman", serif;
+    --font-mono: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+
+    /* Border Radius */
+    --radius: 0.5rem;
+    /* Button radius: the kit's radiusButton is written here at install time;
+       the default matches shadcn `rounded-md` (calc(var(--radius) - 2px)) so a
+       kit without a button radius renders unchanged. Consumed by the Button
+       `cva` via `rounded-[var(--radius-button)]` (AIROBUILD-3249). */
+    --radius-button: calc(var(--radius) - 2px);
+
+    /* Spacing scale — every spacing utility takes these rungs: p-base, py-xxl,
+       mb-lg, gap-base, mt-xs. Retune the site's rhythm from here. */
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-base: 1.5rem;
+    --space-lg: 2rem;
+    --space-xl: 3rem;
+    --space-xxl: 4rem;
+    --space-xxxl: 6rem;
+
+    /* Content container width (max-w-content) */
+    --width-content: 72rem;
+
+    /* Shadows */
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+/* Shared long-form type scale (RUBICON-554). Single source of truth for
+   page titles and rich markdown content; anchored to the site heading range so
+   blog posts match the rest of the customer's site. */
+@layer components {
+  .page-title {
+    font-size: clamp(1.875rem, 2vw + 1rem, 2.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: normal;
+    color: hsl(var(--foreground));
+  }
+
+  .rich-text {
+    color: hsl(var(--muted-foreground));
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+  /* Defensive: a stray body H1 renders one step below .page-title and is
+     visually distinct from the real page title above it. */
+  .rich-text h1 {
+    font-size: clamp(1.5rem, 1.5vw + 1rem, 1.875rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: hsl(var(--foreground));
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .rich-text h2 {
+    font-size: clamp(1.5rem, 1.5vw + 1rem, 1.875rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: hsl(var(--foreground));
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .rich-text h3 {
+    font-size: clamp(1.25rem, 1vw + 0.9rem, 1.5rem);
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  .rich-text h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .rich-text p {
+    margin-bottom: 1.25rem;
+  }
+  .rich-text a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+  }
+  .rich-text ul,
+  .rich-text ol {
+    margin: 1.25rem 0;
+    padding-left: 1.5rem;
+  }
+  .rich-text ul { list-style: disc; }
+  .rich-text ol { list-style: decimal; }
+  .rich-text li { margin-bottom: 0.5rem; }
+  .rich-text blockquote {
+    border-left: 3px solid hsl(var(--primary));
+    padding-left: 1rem;
+    font-style: italic;
+    margin: 1.5rem 0;
+    color: hsl(var(--foreground));
+  }
+  .rich-text code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: hsl(var(--muted));
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+  }
+  .rich-text pre {
+    background: hsl(var(--muted));
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+  .rich-text pre code {
+    background: transparent;
+    padding: 0;
+  }
+  .rich-text img {
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+    max-width: 100%;
+    height: auto;
+  }
+  .rich-text table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+  }
+  .rich-text th,
+  .rich-text td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.2s;
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: fadeIn;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Unless told otherwise, keep it for smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+
+/* ===== NEUMORPHISM BASE ===== */
+.neu-card {
+  background: #e0e5ec;
+  border-radius: 16px;
+  box-shadow: 6px 6px 12px #a3b1c6, -6px -6px 12px #ffffff;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.neu-card:hover {
+  box-shadow: 8px 8px 16px #a3b1c6, -8px -8px 16px #ffffff;
+}
+.neu-card:active {
+  box-shadow: inset 4px 4px 8px #a3b1c6, inset -4px -4px 8px #ffffff;
+}
+
+.neu-button {
+  background: #e0e5ec;
+  border-radius: 12px;
+  box-shadow: 4px 4px 8px #a3b1c6, -4px -4px 8px #ffffff;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+.neu-button:hover {
+  box-shadow: 6px 6px 12px #a3b1c6, -6px -6px 12px #ffffff;
+}
+.neu-button:active {
+  box-shadow: inset 3px 3px 6px #a3b1c6, inset -3px -3px 6px #ffffff;
+  transform: scale(0.97);
+}
+.neu-inset {
+  background: #e0e5ec;
+  border-radius: 12px;
+  box-shadow: inset 4px 4px 8px #a3b1c6, inset -4px -4px 8px #ffffff;
+}
+.neu-pressed {
+  box-shadow: inset 4px 4px 8px #a3b1c6, inset -4px -4px 8px #ffffff !important;
+  transform: scale(0.97);
+}
+
+
+
+/* ===== WHATSAPP FAB ===== */
+.whatsapp-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #25d366;
+  box-shadow: 4px 4px 12px rgba(37,211,102,0.4), -2px -2px 8px #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+.whatsapp-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 6px 6px 16px rgba(37,211,102,0.5), -3px -3px 10px #ffffff;
+}
+.whatsapp-fab:active {
+  transform: scale(0.95);
+}
+
+/* ===== BOTTOM SHEET ===== */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+}
+.sheet-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  background: #e0e5ec;
+  border-radius: 28px 28px 0 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+}
+.sheet-handle {
+  width: 40px;
+  height: 5px;
+  background: #a3b1c6;
+  border-radius: 3px;
+  margin: 12px auto 0;
+}
+
+/* ===== CATEGORY CHIP ===== */
+.category-chip {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #e0e5ec;
+  box-shadow: 3px 3px 6px #a3b1c6, -3px -3px 6px #ffffff;
+  color: #6b7a99;
+  border: none;
+  white-space: nowrap;
+}
+.category-chip:hover {
+  box-shadow: 4px 4px 8px #a3b1c6, -4px -4px 8px #ffffff;
+}
+.category-chip.active {
+  box-shadow: inset 3px 3px 6px #a3b1c6, inset -3px -3px 6px #ffffff;
+  color: #4f8ef7;
+  font-weight: 700;
+}
+
+/* ===== BESTSELLER CAROUSEL ===== */
+:root {
+  --carousel-ml-from: 26 59% 26%;
+  --carousel-ml-mid: 221 83% 53%;
+  --carousel-ml-to: 263 70% 50%;
+  --carousel-ff-from: 0 59% 28%;
+  --carousel-ff-mid: 0 72% 51%;
+  --carousel-ff-to: 25 95% 53%;
+  --carousel-rb-from: 120 47% 20%;
+  --carousel-rb-mid: 142 71% 45%;
+  --carousel-rb-to: 187 85% 53%;
+  --carousel-badge-ml: 221 83% 53%;
+  --carousel-badge-ff: 0 72% 51%;
+  --carousel-badge-rb: 142 71% 45%;
+  --carousel-price-from: 43 96% 56%;
+  --carousel-price-to: 25 95% 53%;
+  --carousel-shadow-dark: #a3b1c6;
+  --carousel-shadow-light: #ffffff;
+}
+
+/* ===== OTP INPUT NEUMORPHISM ===== */
+.otp-slot {
+  width: 48px;
+  height: 56px;
+  border-radius: 12px;
+  background: #e0e5ec;
+  box-shadow: inset 4px 4px 8px #a3b1c6, inset -4px -4px 8px #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a2340;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.otp-slot[data-active] {
+  border-color: #4f8ef7;
+}
+
+/* ===== SHAKE ANIMATION ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+.shake {
+  animation: shake 0.4s ease;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #e0e5ec; }
+::-webkit-scrollbar-thumb { background: #a3b1c6; border-radius: 3px; }
+
+
+/* ===== NEUMORPHISM CUSTOM VARIABLES ===== */
+:root {
+  --neu-shadow-dark: 163 16% 72%;   /* #a3b1c6 */
+  --neu-shadow-light: 0 0% 100%;    /* #ffffff */
+  --neu-base: 220 20% 90%;          /* #e0e5ec */
+  --neu-text-dark: 225 40% 17%;     /* #1a2340 */
+  --neu-text-mid: 220 18% 35%;      /* #4a5568 */
+  --neu-img-bg: 220 20% 83%;        /* #d0d8e4 */
+  --neu-wa-green: 142 70% 49%;      /* #25d366 */
+  --neu-wa-glow: 142 70% 49% / 0.4;
+  --neu-success: 160 84% 39%;       /* #10b981 */
+  --neu-danger: 0 84% 60%;          /* #ef4444 */
+  --whatsapp-green: 142 70% 49%;    /* #25D366 — WhatsApp brand color */
+}
+
+/* Hide global header & footer on admin page */
+body.admin-page header:not(.admin-own-header),
+body.admin-page footer {
+  display: none !important;
+}
