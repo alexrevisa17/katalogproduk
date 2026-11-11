@@ -40,7 +40,16 @@ export async function createSupabaseSignedImageUpload(mime: string) {
     method: 'POST',
     headers: { apikey: key(), Authorization: `Bearer ${key()}`, 'x-upsert': 'false' },
   });
-  const payload = await response.json() as { url?: string; signedURL?: string; signedUrl?: string; token?: string; error?: string; message?: string };
+  const responseText = await response.text();
+  let payload: { url?: string; signedURL?: string; signedUrl?: string; token?: string; error?: string; message?: string } = {};
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText) as typeof payload;
+    } catch {
+      const detail = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+      throw new Error(`Supabase Storage mengirim respons bukan JSON (HTTP ${response.status}): ${detail || 'respons kosong'}`);
+    }
+  }
   if (!response.ok) throw new Error(`Supabase Storage ${response.status}: ${payload.message || payload.error || 'Gagal membuat signed upload URL'}`);
   const signedPath = payload.url || payload.signedURL || payload.signedUrl;
   if (!signedPath) throw new Error('Supabase tidak mengembalikan signed upload URL.');
