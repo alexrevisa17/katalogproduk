@@ -110,9 +110,16 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mime: file.type }),
       });
-      const signed = await signResponse.json() as { uploadUrl?: string; publicUrl?: string; error?: string };
+      const signText = await signResponse.text();
+      let signed: { uploadUrl?: string; publicUrl?: string; error?: string };
+      try {
+        signed = JSON.parse(signText) as { uploadUrl?: string; publicUrl?: string; error?: string };
+      } catch {
+        const detail = signText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+        throw new Error(detail || `Server upload tidak mengirim JSON (HTTP ${signResponse.status}). Periksa deployment Vercel.`);
+      }
       if (!signResponse.ok || !signed.uploadUrl || !signed.publicUrl) {
-        throw new Error(signed.error ?? 'Gagal menyiapkan upload gambar');
+        throw new Error(signed.error ?? `Gagal menyiapkan upload gambar (HTTP ${signResponse.status})`);
       }
 
       const uploadResponse = await fetch(signed.uploadUrl, {
@@ -121,8 +128,13 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
         body: file,
       });
       if (!uploadResponse.ok) {
-        const detail = await uploadResponse.text().catch(() => '');
-        throw new Error(detail.slice(0, 180) || 'Upload ke Supabase Storage gagal');
+        const raw = await uploadResponse.text().catch(() => '');
+        let detail = raw;
+        try {
+          const parsed = JSON.parse(raw) as { message?: string; error?: string };
+          detail = parsed.message || parsed.error || raw;
+        } catch {}
+        throw new Error(detail.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180) || `Upload ke Supabase Storage gagal (HTTP ${uploadResponse.status})`);
       }
       const json = { url: signed.publicUrl };
 
@@ -249,29 +261,47 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
 
       {/* Preview */}
       {showPreview && (
-        <div
-          className="rounded-xl overflow-hidden relative"
-          style={{
-            aspectRatio: hintColor === 'primary' ? '1/1' : '16/9',
-            background: 'hsl(var(--neu-img-bg))',
-            boxShadow: 'inset 3px 3px 8px hsl(var(--neu-shadow-dark)), inset -3px -3px 8px hsl(var(--neu-shadow-light))',
-          }}
-        >
-          {previewError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-              <ImageIcon size={24} className="text-muted-foreground" />
-              <span className="text-muted-foreground text-xs font-semibold">Gambar tidak dapat dimuat</span>
-            </div>
-          ) : (
-            <img
-              src={value}
-              alt="preview"
-              className="w-full h-full object-cover"
-              onError={() => setPreviewError(true)}
-              onLoad={() => setPreviewError(false)}
-            />
-          )}
-        </div>
+        <>
+          <div
+            className="rounded-xl overflow-hidden relative"
+            style={{
+              aspectRatio: hintColor === 'primary' ? '1/1' : '16/9',
+              background: 'hsl(var(--neu-img-bg))',
+              boxShadow: 'inset 3px 3px 8px hsl(var(--neu-shadow-dark)), inset -3px -3px 8px hsl(var(--neu-shadow-light))',
+            }}
+          >
+            {previewError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                <ImageIcon size={24} className="text-muted-foreground" />
+                <span className="text-muted-foreground text-xs font-semibold">Gambar tidak dapat dimuat</span>
+              </div>
+            ) : (
+              <img
+                src={value}
+                alt="preview"
+                className="w-full h-full object-cover"
+                onError={() => setPreviewError(true)}
+                onLoad={() => setPreviewError(false)}
+              />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              setUrlDraft('');
+              setPreviewError(false);
+              setUploadStatus('idle');
+              setUploadMsg('Gambar dihapus. Simpan produk untuk menerapkan perubahan.');
+              if (fileRef.current) fileRef.current.value = '';
+            }}
+            className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors"
+            style={{ color: 'hsl(var(--neu-danger))', background: 'hsl(var(--neu-danger) / 0.10)' }}
+          >
+            <Trash2 size={15} />
+            Hapus gambar
+          </button>
+        </>
       )}
     </div>
   );
