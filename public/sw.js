@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bang-pray-store-v1';
+const CACHE_NAME = 'bang-pray-store-v2';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
