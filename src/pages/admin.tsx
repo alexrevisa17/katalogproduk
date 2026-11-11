@@ -15,7 +15,19 @@ const LOCK_SECONDS = 30;
 async function loadProducts(): Promise<Product[]> {
   const response = await fetch('/api/products', { credentials: 'same-origin', cache: 'no-store' });
   if (!response.ok) throw new Error('Gagal memuat produk dari Supabase.');
-  return await response.json() as Product[];
+  const products = await response.json() as Product[];
+  const imageUrls = Array.from(new Set(products.flatMap(product =>
+    [product.imageThumbnail, product.imageDetail, product.image].filter((url): url is string => Boolean(url))
+  )));
+  await Promise.all(imageUrls.map(url => new Promise<void>(resolve => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+    if (image.complete) resolve();
+    else if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
+  })));
+  return products;
 }
 
 function formatRupiah(n: number) {
