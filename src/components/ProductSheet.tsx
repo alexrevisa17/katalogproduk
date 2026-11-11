@@ -14,7 +14,7 @@ export interface Product {
   description: string;
   /** @deprecated gunakan imageThumbnail / imageDetail */
   image: string;
-  /** Gambar kartu katalog — 400×400 px (1:1). Jika kosong, pakai imageDetail atau image. */
+  /** Gambar kartu katalog — disarankan 800×600 px (4:3). Jika kosong, pakai imageDetail atau image. */
   imageThumbnail?: string;
   /** Gambar detail & carousel background — 800×450 px (16:9). Jika kosong, pakai image. */
   imageDetail?: string;
