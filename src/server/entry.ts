@@ -256,7 +256,10 @@ const app = express();
 // the sitemap origin in robots.txt.
 app.set("trust proxy", true);
 
-app.use(express.json({ limit: "7mb" }));
+// 10 MB image files sent as data URLs expand by roughly 33%; the storefront
+// currently uses signed direct-to-Supabase uploads, but keep this legacy route
+// consistent for any existing clients.
+app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // <api-registrations>
