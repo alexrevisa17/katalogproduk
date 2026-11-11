@@ -1,6 +1,4 @@
-import { loginAdmin } from "../../src/server/api/admin/_auth";
-import type { Request, Response } from "express";
+import app from "../../dist/server.bundle.mjs";
 
-export default function handler(req: Request, res: Response) {
-  loginAdmin(req, res);
-}
+// Route admin login through the same compiled Express app as the main API.
+export default app;
