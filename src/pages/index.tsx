@@ -25,13 +25,17 @@ async function loadProducts(): Promise<Product[]> {
 export default function HomePage() {
   const storeConfig = useStoreConfig();
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     let active = true;
-    loadProducts().then(data => { if (active) setProducts(data); }).catch(() => { if (active) setProducts(DEFAULT_PRODUCTS); });
+    loadProducts()
+      .then(data => { if (active) setProducts(data); })
+      .catch(() => { if (active) setProducts(DEFAULT_PRODUCTS); })
+      .finally(() => { if (active) setIsLoadingProducts(false); });
     return () => { active = false; };
   }, []);
 
@@ -151,9 +155,14 @@ export default function HomePage() {
         </section>
 
         {/* Produk Terlaris Carousel */}
-        {!search && (
-          <BestsellerCarousel products={products} onSelect={setSelectedProduct} />
-        )}
+        {!search && (isLoadingProducts ? (
+          <section className="px-4 pb-4" aria-hidden="true">
+            <div className="h-4 w-36 rounded-md animate-pulse mb-3" style={{ background: 'hsl(var(--muted))' }} />
+            <div className="flex gap-3 overflow-hidden">
+              {[0, 1].map(item => <div key={item} className="shrink-0 w-[82%] sm:w-2/3 h-40 rounded-2xl animate-pulse" style={{ background: 'hsl(var(--muted))' }} />)}
+            </div>
+          </section>
+        ) : <BestsellerCarousel products={products} onSelect={setSelectedProduct} />)}
 
         {/* Category chips */}
         <section className="pb-2 px-0">
@@ -164,7 +173,9 @@ export default function HomePage() {
             className="flex gap-2 overflow-x-auto max-w-4xl mx-auto"
             style={{ scrollbarWidth: 'none', paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '10px' }}
           >
-            {categories.map(cat => (
+            {isLoadingProducts ? [0, 1, 2, 3].map(item => (
+              <span key={item} className="h-10 w-24 shrink-0 rounded-full animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+            )) : categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -178,7 +189,21 @@ export default function HomePage() {
 
         {/* Product grid */}
         <section className="px-4 pb-24 max-w-7xl mx-auto">
-          {filtered.length === 0 ? (
+          {isLoadingProducts ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5" aria-label="Memuat produk" aria-busy="true">
+              {[0, 1, 2, 3, 4, 5, 6, 7].map(item => (
+                <div key={item} className="neu-card overflow-hidden">
+                  <div className="w-full animate-pulse" style={{ aspectRatio: '4/3', background: 'hsl(var(--muted))' }} />
+                  <div className="p-3 space-y-3">
+                    <div className="h-3 w-24 rounded animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                    <div className="h-4 w-full rounded animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                    <div className="h-4 w-2/3 rounded animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                    <div className="h-9 w-full rounded-xl animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <Package size={48} className="text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground font-semibold text-lg">{home.empty.title}</p>
