@@ -124,11 +124,6 @@ export default function HomePage() {
       <main className="min-h-screen bg-background">
         {/* Search bar */}
         <section className="pt-6 pb-3 px-4">
-          <div className="max-w-2xl mx-auto px-0 pb-2">
-            <h1 className="text-sm font-bold text-muted-foreground text-center tracking-wide">
-              Top Up Diamond ML · Free Fire · Roblox
-            </h1>
-          </div>
           <div className="max-w-2xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
