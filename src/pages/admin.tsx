@@ -16,11 +16,10 @@ async function waitForImage(url?: string): Promise<void> {
   if (!url) return;
   await new Promise<void>(resolve => {
     const image = new Image();
-    image.onload = () => resolve();
     image.onerror = () => resolve();
     image.src = url;
-    if (image.complete) resolve();
-    else if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
+    if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
+    else image.onload = () => resolve();
   });
 }
 
