@@ -50,7 +50,7 @@ public/
   manifest.webmanifest
   sw.js
 vercel.json
-.env.example
+env.example
 ```
 
 ## Persiapan Supabase
