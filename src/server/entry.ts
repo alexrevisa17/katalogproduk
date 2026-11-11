@@ -370,7 +370,8 @@ app.post("/api/upload/sign", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("Supabase signed image upload failed", error);
-    res.status(503).json({ error: "Tidak dapat menyiapkan upload Supabase Storage." });
+    const detail = error instanceof Error ? error.message : "Kesalahan tidak diketahui.";
+    res.status(503).json({ error: `Tidak dapat menyiapkan upload Supabase Storage: ${detail.slice(0, 220)}` });
   }
 });
 
