@@ -10,7 +10,7 @@ import uploadPost from "./api/upload/POST";
 import storeConfigGet from "./api/store-config/GET";
 import storeConfigPut from "./api/store-config/PUT";
 import { isAdminAuthenticated, loginAdmin, logoutAdmin } from "./api/admin/_auth";
-import { createSupabaseSignedImageUpload } from "./supabase";
+import { createSupabaseSignedImageUpload, supabaseRequest } from "./supabase";
 import productsGet from "./api/products/GET";
 import productsPost from "./api/products/POST";
 import productsDelete from "./api/products/DELETE";
@@ -264,6 +264,86 @@ app.use(express.urlencoded({ extended: true }));
 
 // <api-registrations>
 app.get("/api/health", healthGet);
+
+// Serve the exact logo saved by the store owner as the browser/PWA brand asset.
+// The SVG wrapper only adds transparent square canvas space; it does not redraw
+// or replace the uploaded logo artwork.
+async function configuredLogoUrl(req: Request): Promise<string | null> {
+  const rows = await supabaseRequest('store_config?select=logo_url&id=eq.main&limit=1') as Array<{ logo_url?: unknown }>;
+  const raw = rows[0]?.logo_url;
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  try {
+    const url = new URL(raw.trim(), `${req.protocol}://${req.hostname}`);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    if (url.pathname.startsWith('/api/brand-')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+app.get("/api/brand-logo-file", async (req, res) => {
+  try {
+    const logoUrl = await configuredLogoUrl(req);
+    if (!logoUrl) { res.status(404).type("text/plain").send("Store logo not configured"); return; }
+    res.setHeader("Cache-Control", "no-store");
+    res.redirect(302, logoUrl);
+  } catch (error) {
+    console.error("brand logo lookup failed", error);
+    res.status(503).type("text/plain").send("Brand asset unavailable");
+  }
+});
+
+app.get("/api/brand-icon.svg", async (req, res) => {
+  try {
+    const logoUrl = await configuredLogoUrl(req);
+    if (!logoUrl) { res.status(404).type("text/plain").send("Store logo not configured"); return; }
+    const imageResponse = await fetch(logoUrl);
+    if (!imageResponse.ok) { res.status(502).type("text/plain").send("Unable to load configured store logo"); return; }
+    const mime = (imageResponse.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (!["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"].includes(mime)) {
+      res.status(415).type("text/plain").send("Configured logo must be an image");
+      return;
+    }
+    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+    if (!imageBuffer.length || imageBuffer.length > 8 * 1024 * 1024) {
+      res.status(413).type("text/plain").send("Configured logo is too large");
+      return;
+    }
+    const embedded = `data:${mime};base64,${imageBuffer.toString("base64")}`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><image href="${embedded}" x="24" y="24" width="464" height="464" preserveAspectRatio="xMidYMid meet"/></svg>`;
+    res.type("image/svg+xml").set("Cache-Control", "no-store").send(svg);
+  } catch (error) {
+    console.error("brand icon generation failed", error);
+    res.status(503).type("text/plain").send("Brand asset unavailable");
+  }
+});
+
+app.get("/api/brand-manifest", async (req, res) => {
+  try {
+    const logoUrl = await configuredLogoUrl(req);
+    if (!logoUrl) { res.status(404).json({ error: "Store logo not configured" }); return; }
+    const manifest = {
+      id: "/",
+      name: "Bang Pray Store",
+      short_name: "Bang Pray",
+      description: "Top up Mobile Legends, Free Fire, dan Roblox.",
+      lang: "id-ID",
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: "#07111f",
+      theme_color: "#087bff",
+      prefer_related_applications: false,
+      icons: [{ src: "/api/brand-icon.svg?v=7", sizes: "any", type: "image/svg+xml", purpose: "any" }],
+    };
+    res.type("application/manifest+json").set("Cache-Control", "no-store").json(manifest);
+  } catch (error) {
+    console.error("brand manifest generation failed", error);
+    res.status(503).json({ error: "Brand manifest unavailable" });
+  }
+});
 app.get("/api/products", productsGet);
 app.post("/api/products", (req, res, next) => { if (!isAdminAuthenticated(req)) { res.status(401).json({ error: "Sesi admin tidak valid." }); return; } next(); }, productsPost);
 app.delete("/api/products/:id", (req, res, next) => { if (!isAdminAuthenticated(req)) { res.status(401).json({ error: "Sesi admin tidak valid." }); return; } next(); }, productsDelete);
