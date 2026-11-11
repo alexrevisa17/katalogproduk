@@ -18,7 +18,22 @@ function formatRupiah(n: number) {
 async function loadProducts(): Promise<Product[]> {
   const response = await fetch('/api/products', { cache: 'no-store' });
   if (!response.ok) throw new Error('Tidak dapat memuat produk dari database.');
-  return await response.json() as Product[];
+  const products = await response.json() as Product[];
+
+  // Keep the catalogue skeleton visible until every product/carousel image has
+  // either decoded or failed. A failed image must not leave the page loading.
+  const imageUrls = Array.from(new Set(products.flatMap(product =>
+    [product.imageThumbnail, product.imageDetail, product.image].filter((url): url is string => Boolean(url))
+  )));
+  await Promise.all(imageUrls.map(url => new Promise<void>(resolve => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+    if (image.complete) resolve();
+    else if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
+  })));
+  return products;
 }
 
 
@@ -136,19 +151,25 @@ export default function HomePage() {
               className="neu-inset flex items-center gap-3 px-4 py-3"
               style={{ borderRadius: '16px' }}
             >
-              <Search size={20} className="text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                placeholder={home.search.placeholder}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="bg-transparent border-none outline-none w-full text-foreground font-semibold placeholder:text-muted-foreground"
-                style={{ fontSize: '0.95rem' }}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-foreground">
-                  <RefreshCw size={16} />
-                </button>
+              {isLoadingProducts ? (
+                <div className="h-6 w-full rounded-md animate-pulse" style={{ background: 'hsl(var(--muted))' }} aria-hidden="true" />
+              ) : (
+                <>
+                  <Search size={20} className="text-muted-foreground shrink-0" />
+                  <input
+                    type="text"
+                    placeholder={home.search.placeholder}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="bg-transparent border-none outline-none w-full text-foreground font-semibold placeholder:text-muted-foreground"
+                    style={{ fontSize: '0.95rem' }}
+                  />
+                  {search && (
+                    <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-foreground">
+                      <RefreshCw size={16} />
+                    </button>
+                  )}
+                </>
               )}
             </motion.div>
           </div>
@@ -286,15 +307,24 @@ export default function HomePage() {
         </section>
 
         {/* WhatsApp FAB */}
-        <a
-          href={buildWaUrl(storeConfig.whatsappNumber)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="whatsapp-fab"
-          title={home.fab.label}
-        >
-          <MessageCircle size={28} color="white" />
-        </a>
+        {isLoadingProducts ? (
+          <div
+            className="whatsapp-fab animate-pulse"
+            style={{ background: 'hsl(var(--muted))', boxShadow: 'none' }}
+            aria-hidden="true"
+          />
+        ) : (
+          <a
+            href={buildWaUrl(storeConfig.whatsappNumber)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="whatsapp-fab"
+            title={home.fab.label}
+            aria-label={home.fab.label}
+          >
+            <MessageCircle size={28} color="white" />
+          </a>
+        )}
 
         {/* Product Sheet */}
         <ProductSheet product={selectedProduct} onClose={() => setSelectedProduct(null)} />
