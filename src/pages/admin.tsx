@@ -115,8 +115,10 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
       try {
         signed = JSON.parse(signText) as { uploadUrl?: string; publicUrl?: string; error?: string };
       } catch {
-        const detail = signText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
-        throw new Error(detail || `Server upload tidak mengirim JSON (HTTP ${signResponse.status}). Periksa deployment Vercel.`);
+        const detail = signText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+        throw new Error(
+          `API penyiapan upload (/api/upload/sign) mengembalikan HTTP ${signResponse.status}: ${detail || 'respons bukan JSON'}`
+        );
       }
       if (!signResponse.ok || !signed.uploadUrl || !signed.publicUrl) {
         throw new Error(signed.error ?? `Gagal menyiapkan upload gambar (HTTP ${signResponse.status})`);
