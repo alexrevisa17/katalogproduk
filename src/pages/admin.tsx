@@ -7,10 +7,22 @@ import { Shield, LogOut, Plus, Edit2, Trash2, Eye, EyeOff, CheckCircle, XCircle,
 import { toast, Toaster } from 'sonner';
 import type { Product } from '@/components/ProductSheet';
 import { admin } from 'virtual:content';
-import { useStoreConfig, saveStoreConfig } from '@/hooks/useStoreConfig';
+import { fetchStoreConfig, useStoreConfig, saveStoreConfig } from '@/hooks/useStoreConfig';
 
 const MAX_ATTEMPTS = 3;
 const LOCK_SECONDS = 30;
+
+async function waitForImage(url?: string): Promise<void> {
+  if (!url) return;
+  await new Promise<void>(resolve => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+    if (image.complete) resolve();
+    else if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
+  });
+}
 
 async function loadProducts(): Promise<Product[]> {
   const response = await fetch('/api/products', { credentials: 'same-origin', cache: 'no-store' });
@@ -19,14 +31,7 @@ async function loadProducts(): Promise<Product[]> {
   const imageUrls = Array.from(new Set(products.flatMap(product =>
     [product.imageThumbnail, product.imageDetail, product.image].filter((url): url is string => Boolean(url))
   )));
-  await Promise.all(imageUrls.map(url => new Promise<void>(resolve => {
-    const image = new Image();
-    image.onload = () => resolve();
-    image.onerror = () => resolve();
-    image.src = url;
-    if (image.complete) resolve();
-    else if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
-  })));
+  await Promise.all(imageUrls.map(waitForImage));
   return products;
 }
 
@@ -858,9 +863,10 @@ export default function AdminPage() {
         if (!active) return;
         if (data.authenticated) {
           setIsAuth(true);
-          // Keep the dashboard skeleton until the complete product list and
-          // its images are ready, not merely until the session endpoint replies.
-          const loadedProducts = await loadProducts();
+          // Keep the dashboard skeleton until store branding, the complete
+          // product list, and every product image have settled.
+          const [loadedProducts, config] = await Promise.all([loadProducts(), fetchStoreConfig()]);
+          await waitForImage(config.logoUrl);
           if (active) setProducts(loadedProducts);
         }
       } catch {
@@ -902,7 +908,9 @@ export default function AdminPage() {
         setIsAuth(true);
         setIsLoadingProducts(true);
         try {
-          setProducts(await loadProducts());
+          const [loadedProducts, config] = await Promise.all([loadProducts(), fetchStoreConfig()]);
+          await waitForImage(config.logoUrl);
+          setProducts(loadedProducts);
         } catch {
           toast.error('Gagal memuat produk dari Supabase');
         } finally {
