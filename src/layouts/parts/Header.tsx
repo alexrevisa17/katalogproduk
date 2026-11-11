@@ -1,12 +1,19 @@
 import { Link } from 'react-router';
 import { Shield } from 'lucide-react';
-import { useStoreConfig } from '@/hooks/useStoreConfig';
+import { fetchStoreConfig, useStoreConfig } from '@/hooks/useStoreConfig';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
   const config = useStoreConfig();
+  const [configReady, setConfigReady] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchStoreConfig().finally(() => { if (active) setConfigReady(true); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     setLogoLoaded(false);
@@ -25,10 +32,10 @@ export default function Header() {
           className="relative flex items-center justify-start shrink-0 no-underline"
           style={{ width: '160px', height: '36px' }}
         >
-          {!logoLoaded && !logoFailed && (
+          {(!configReady || !logoLoaded) && !logoFailed && (
             <span className="absolute inset-0 rounded-lg animate-pulse" style={{ background: 'hsl(var(--muted))' }} aria-hidden="true" />
           )}
-          {!logoFailed && (
+          {configReady && !logoFailed && (
             <img
               src={config.logoUrl}
               alt={config.storeName}
@@ -55,7 +62,7 @@ export default function Header() {
             background: 'hsl(var(--background))',
           }}
         >
-          {!logoLoaded && !logoFailed
+          {(!configReady || !logoLoaded) && !logoFailed
             ? <span className="absolute inset-1 rounded-md animate-pulse" style={{ background: 'hsl(var(--muted))' }} aria-hidden="true" />
             : <Shield size={19} />}
           <span className="sr-only">Admin</span>
