@@ -1,0 +1,52 @@
+{
+  "products/ml-diamond-weekly": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2284346107"
+  },
+  "products/ff-diamond-large": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1000773872"
+  },
+  "products/ml-weekly-diamond": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2233316892"
+  },
+  "products/ff-diamond-small": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1395660466"
+  },
+  "products/ml-diamond-starlight": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1488267911"
+  },
+  "products/roblox-robux-small": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1241060012"
+  },
+  "products/roblox-robux-large": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1189909110"
+  },
+  "products/roblox-premium": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/530649463"
+  },
+  "products/ml-diamond-monthly": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2283213521"
+  },
+  "products/ff-weekly-pass": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2245799531"
+  },
+  "logo/horizontal": {
+    "mediaType": "logo",
+    "currentUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/71305af4-a025-4eb9-a9f5-6bd0f73df52a/session/437effd3-586a-46ab-b93c-09a53751961c/horizontal-transparent-953e68b6-431e-4a39-b555-604f3aeab6c1/logo-logo.png",
+    "lightSurfaceUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/71305af4-a025-4eb9-a9f5-6bd0f73df52a/session/437effd3-586a-46ab-b93c-09a53751961c/horizontal-transparent-953e68b6-431e-4a39-b555-604f3aeab6c1/logo-logo.png"
+  },
+  "logo/favicon": {
+    "mediaType": "logo",
+    "currentUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/71305af4-a025-4eb9-a9f5-6bd0f73df52a/session/9a135c6f-8d9a-488d-8914-3e1b27762319/favicon-transparent-fe28556c-5d7e-4ee6-8b80-5137e7387f60/logo-logo.png",
+    "lightSurfaceUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/71305af4-a025-4eb9-a9f5-6bd0f73df52a/session/9a135c6f-8d9a-488d-8914-3e1b27762319/favicon-transparent-fe28556c-5d7e-4ee6-8b80-5137e7387f60/logo-logo.png"
+  }
+}
