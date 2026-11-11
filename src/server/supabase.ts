@@ -53,10 +53,27 @@ export async function createSupabaseSignedImageUpload(mime: string) {
   if (!response.ok) throw new Error(`Supabase Storage ${response.status}: ${payload.message || payload.error || 'Gagal membuat signed upload URL'}`);
   const signedPath = payload.url || payload.signedURL || payload.signedUrl;
   if (!signedPath) throw new Error('Supabase tidak mengembalikan signed upload URL.');
-  let uploadUrl = signedPath.startsWith('http') ? signedPath : `${base()}/storage/v1${signedPath.startsWith('/') ? signedPath : `/${signedPath}`}`;
-  if (payload.token && !uploadUrl.includes('token=')) uploadUrl += `${uploadUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(payload.token)}`;
+
+  // Supabase returns a path such as /object/upload/sign/<bucket>/<name>?token=...
+  // Build the final endpoint from our configured project origin, rather than
+  // concatenating arbitrary path prefixes (which can create a broken URL).
+  let token = payload.token;
+  try {
+    const returnedUrl = new URL(signedPath, `${base()}/storage/v1/`);
+    token = token || returnedUrl.searchParams.get('token') || undefined;
+  } catch {
+    throw new Error('Format signed upload URL dari Supabase tidak valid.');
+  }
+  if (!token) throw new Error('Supabase tidak mengembalikan token signed upload.');
+
+  const projectUrl = new URL(base());
+  const uploadUrl = new URL(
+    `/storage/v1/object/upload/sign/product-images/${encodeURIComponent(name)}`,
+    projectUrl.origin,
+  );
+  uploadUrl.searchParams.set('token', token);
   return {
-    uploadUrl,
+    uploadUrl: uploadUrl.toString(),
     publicUrl: `${base()}/storage/v1/object/public/product-images/${name}`,
   };
 }
