@@ -5,7 +5,7 @@ import { Search, MessageCircle, Package, RefreshCw } from 'lucide-react';
 import BestsellerCarousel from '@/components/BestsellerCarousel';
 import ProductSheet, { type Product } from '@/components/ProductSheet';
 import { home } from 'virtual:content';
-import { useStoreConfig } from '@/hooks/useStoreConfig';
+import { fetchStoreConfig, useStoreConfig } from '@/hooks/useStoreConfig';
 import { buildWaUrl } from '@/lib/store-config';
 import { DEFAULT_PRODUCTS } from '@/lib/default-products';
 
@@ -13,6 +13,18 @@ import { DEFAULT_PRODUCTS } from '@/lib/default-products';
 
 function formatRupiah(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+}
+
+async function waitForImage(url?: string): Promise<void> {
+  if (!url) return;
+  await new Promise<void>(resolve => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+    if (image.complete) resolve();
+    else if (typeof image.decode === 'function') image.decode().then(() => resolve()).catch(() => resolve());
+  });
 }
 
 async function loadProducts(): Promise<Product[]> {
@@ -41,16 +53,28 @@ export default function HomePage() {
   const storeConfig = useStoreConfig();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingBrand, setIsLoadingBrand] = useState(true);
+  const isPageLoading = isLoadingProducts || isLoadingBrand;
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     let active = true;
-    loadProducts()
-      .then(data => { if (active) setProducts(data); })
-      .catch(() => { if (active) setProducts(DEFAULT_PRODUCTS); })
-      .finally(() => { if (active) setIsLoadingProducts(false); });
+    (async () => {
+      try {
+        const [data, config] = await Promise.all([loadProducts(), fetchStoreConfig()]);
+        await waitForImage(config.logoUrl);
+        if (active) setProducts(data);
+      } catch {
+        if (active) setProducts(DEFAULT_PRODUCTS);
+      } finally {
+        if (active) {
+          setIsLoadingProducts(false);
+          setIsLoadingBrand(false);
+        }
+      }
+    })();
     return () => { active = false; };
   }, []);
 
@@ -151,7 +175,7 @@ export default function HomePage() {
               className="neu-inset flex items-center gap-3 px-4 py-3"
               style={{ borderRadius: '16px' }}
             >
-              {isLoadingProducts ? (
+              {isPageLoading ? (
                 <div className="h-6 w-full rounded-md animate-pulse" style={{ background: 'hsl(var(--muted))' }} aria-hidden="true" />
               ) : (
                 <>
@@ -176,7 +200,7 @@ export default function HomePage() {
         </section>
 
         {/* Produk Terlaris Carousel */}
-        {!search && (isLoadingProducts ? (
+        {!search && (isPageLoading ? (
           <section className="px-4 pb-4" aria-hidden="true">
             <div className="h-4 w-36 rounded-md animate-pulse mb-3" style={{ background: 'hsl(var(--muted))' }} />
             <div className="flex gap-3 overflow-hidden">
@@ -194,7 +218,7 @@ export default function HomePage() {
             className="flex gap-2 overflow-x-auto max-w-4xl mx-auto"
             style={{ scrollbarWidth: 'none', paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '10px' }}
           >
-            {isLoadingProducts ? [0, 1, 2, 3].map(item => (
+            {isPageLoading ? [0, 1, 2, 3].map(item => (
               <span key={item} className="h-10 w-24 shrink-0 rounded-full animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
             )) : categories.map(cat => (
               <button
@@ -210,7 +234,7 @@ export default function HomePage() {
 
         {/* Product grid */}
         <section className="px-4 pb-24 max-w-7xl mx-auto">
-          {isLoadingProducts ? (
+          {isPageLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5" aria-label="Memuat produk" aria-busy="true">
               {[0, 1, 2, 3, 4, 5, 6, 7].map(item => (
                 <div key={item} className="neu-card overflow-hidden">
@@ -307,7 +331,7 @@ export default function HomePage() {
         </section>
 
         {/* WhatsApp FAB */}
-        {isLoadingProducts ? (
+        {isPageLoading ? (
           <div
             className="whatsapp-fab animate-pulse"
             style={{ background: 'hsl(var(--muted))', boxShadow: 'none' }}
