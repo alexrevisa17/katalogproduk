@@ -271,7 +271,7 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
           <div
             className="rounded-xl overflow-hidden relative"
             style={{
-              aspectRatio: hintColor === 'primary' ? '1/1' : '16/9',
+              aspectRatio: hintColor === 'primary' ? '4/3' : '16/9',
               background: 'hsl(var(--neu-img-bg))',
               boxShadow: 'inset 3px 3px 8px hsl(var(--neu-shadow-dark)), inset -3px -3px 8px hsl(var(--neu-shadow-light))',
             }}
@@ -285,7 +285,7 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
               <img
                 src={value}
                 alt="preview"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 onError={() => setPreviewError(true)}
                 onLoad={() => setPreviewError(false)}
               />
@@ -459,7 +459,7 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
 
               <ImageInput
                 label="Thumbnail Katalog"
-                hint="📐 400 × 400 px · Rasio 1:1 · Kartu homepage"
+                hint="📐 800 × 600 px · Rasio 4:3 · Kartu homepage · Gambar tidak dipotong"
                 hintColor="primary"
                 value={form.imageThumbnail ?? ''}
                 onChange={val => setForm(f => ({ ...f, imageThumbnail: val }))}
@@ -467,7 +467,7 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
 
               <ImageInput
                 label="Gambar Detail & Carousel"
-                hint="📐 800 × 450 px · Rasio 16:9 · Detail produk & carousel"
+                hint="📐 1200 × 675 px · Rasio 16:9 · Detail produk & carousel"
                 hintColor="accent"
                 value={form.imageDetail ?? ''}
                 onChange={val => setForm(f => ({ ...f, imageDetail: val }))}
