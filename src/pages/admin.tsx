@@ -324,7 +324,7 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center px-3 py-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
       onClick={() => { if (!isSaving) onClose(); }}
     >
       <motion.div
@@ -332,12 +332,12 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
         dragConstraints={{ top: 0 }}
         dragElastic={0.1}
         onDragEnd={(_e, info) => { if (info.offset.y > 100) onClose(); }}
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
+        initial={{ y: 24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 24, opacity: 0 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="bg-background w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col"
-        style={{ maxHeight: '92vh', touchAction: 'none' }}
+        className="bg-background w-full max-w-lg rounded-3xl shadow-2xl flex flex-col min-h-0"
+        style={{ maxHeight: 'min(86dvh, calc(100dvh - 32px))', touchAction: 'pan-y' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle */}
@@ -824,6 +824,7 @@ export default function AdminPage() {
   const [pinError, setError] = useState('');
   const [shake, setShake] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [editProduct, setEditProduct] = useState<Partial<Product> | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -838,16 +839,27 @@ export default function AdminPage() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/admin/session', { credentials: 'same-origin', cache: 'no-store' })
-      .then(res => res.ok ? res.json() : { authenticated: false })
-      .then((data: { authenticated?: boolean }) => {
-        if (active && data.authenticated) {
+    (async () => {
+      try {
+        const response = await fetch('/api/admin/session', { credentials: 'same-origin', cache: 'no-store' });
+        const data = response.ok ? await response.json() as { authenticated?: boolean } : { authenticated: false };
+        if (!active) return;
+        if (data.authenticated) {
           setIsAuth(true);
-          loadProducts().then(setProducts).catch(() => toast.error('Gagal memuat produk dari Supabase'));
+          // Keep the dashboard skeleton until the complete product list and
+          // its images are ready, not merely until the session endpoint replies.
+          const loadedProducts = await loadProducts();
+          if (active) setProducts(loadedProducts);
         }
-      })
-      .catch(() => {})
-      .finally(() => { if (active) setIsCheckingAuth(false); });
+      } catch {
+        if (active) toast.error('Gagal memuat data admin. Periksa koneksi lalu refresh.');
+      } finally {
+        if (active) {
+          setIsLoadingProducts(false);
+          setIsCheckingAuth(false);
+        }
+      }
+    })();
     return () => { active = false; };
   }, []);
 
@@ -876,7 +888,14 @@ export default function AdminPage() {
       });
       if (response.ok) {
         setIsAuth(true);
-        loadProducts().then(setProducts).catch(() => toast.error('Gagal memuat produk dari Supabase'));
+        setIsLoadingProducts(true);
+        try {
+          setProducts(await loadProducts());
+        } catch {
+          toast.error('Gagal memuat produk dari Supabase');
+        } finally {
+          setIsLoadingProducts(false);
+        }
         setPin('');
         setError('');
         return;
@@ -1047,12 +1066,20 @@ export default function AdminPage() {
         >
           <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 shrink-0" title="Kembali ke Toko">
+            <Link
+              to="/"
+              reloadDocument
+              aria-label="Kembali ke homepage Bang Pray Store"
+              className="flex items-center justify-start shrink-0"
+              title="Kembali ke Toko"
+              style={{ width: '160px', height: '36px', cursor: 'pointer' }}
+            >
               <img
                 src={storeConfig.logoUrl}
                 alt={storeConfig.storeName}
-                className="block h-auto w-auto object-contain"
-                style={{ maxHeight: '36px', maxWidth: '160px' }}
+                width={160}
+                height={36}
+                className="block h-full w-full object-contain object-left pointer-events-none"
               />
             </Link>
 
@@ -1141,17 +1168,43 @@ export default function AdminPage() {
                 { label: 'Stok Habis', value: products.filter(p => !p.available || p.stock === 0).length, icon: XCircle },
                 { label: 'Kategori', value: new Set(products.map(p => p.category)).size, icon: Shield },
               ].map(stat => (
-                <div key={stat.label} className="neu-card p-4 text-center">
-                  <stat.icon size={20} className="text-primary mx-auto mb-2" />
-                  <div className="font-black text-2xl text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
-                    {stat.value}
-                  </div>
-                  <div className="text-muted-foreground text-xs font-semibold">{stat.label}</div>
+                <div key={stat.label} className="neu-card p-4 text-center" aria-busy={isLoadingProducts}>
+                  {isLoadingProducts ? (
+                    <>
+                      <div className="h-5 w-5 rounded-full animate-pulse mx-auto mb-2" style={{ background: 'hsl(var(--muted))' }} />
+                      <div className="h-7 w-12 rounded animate-pulse mx-auto mb-2" style={{ background: 'hsl(var(--muted))' }} />
+                      <div className="h-3 w-20 rounded animate-pulse mx-auto" style={{ background: 'hsl(var(--muted))' }} />
+                    </>
+                  ) : (
+                    <>
+                      <stat.icon size={20} className="text-primary mx-auto mb-2" />
+                      <div className="font-black text-2xl text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {stat.value}
+                      </div>
+                      <div className="text-muted-foreground text-xs font-semibold">{stat.label}</div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
             <div className="flex flex-col gap-3">
-              {products.length === 0 ? (
+              {isLoadingProducts ? (
+                <div className="flex flex-col gap-3" aria-label="Memuat daftar produk" aria-busy="true">
+                  {[0, 1, 2, 3, 4, 5].map(item => (
+                    <div key={item} className="neu-card p-4 flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl shrink-0 animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="h-4 w-2/3 rounded animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                        <div className="h-3 w-1/2 rounded animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                        <div className="h-3 w-1/3 rounded animate-pulse" style={{ background: 'hsl(var(--muted))' }} />
+                      </div>
+                      <div className="flex gap-2">
+                        {[0, 1, 2].map(action => <div key={action} className="w-9 h-9 rounded-lg animate-pulse" style={{ background: 'hsl(var(--muted))' }} />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : products.length === 0 ? (
                 <div className="neu-card p-12 text-center">
                   <Package size={40} className="text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground font-semibold">{admin.empty.message}</p>
