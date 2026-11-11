@@ -1,8 +1,10 @@
-const CACHE_NAME = 'bang-pray-store-v5';
+const CACHE_NAME = 'bang-pray-store-v6';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
   '/favicon-48.png',
+  '/favicon.svg',
+  '/pwa-icon.svg',
   '/pwa-icon-180.png',
   '/pwa-icon-192.png',
   '/pwa-icon-512.png',
@@ -48,6 +50,8 @@ self.addEventListener('fetch', event => {
   const isAppAsset = url.pathname.startsWith('/assets/')
     || url.pathname === '/manifest.webmanifest'
     || url.pathname === '/favicon-48.png'
+    || url.pathname === '/favicon.svg'
+    || url.pathname === '/pwa-icon.svg'
     || url.pathname === '/pwa-icon-180.png'
     || url.pathname === '/pwa-icon-192.png'
     || url.pathname === '/pwa-icon-512.png';
