@@ -340,7 +340,7 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-3 py-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm overflow-hidden"
       onClick={() => { if (!isSaving) onClose(); }}
     >
       <motion.div
@@ -348,12 +348,12 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
         dragConstraints={{ top: 0 }}
         dragElastic={0.1}
         onDragEnd={(_e, info) => { if (info.offset.y > 100) onClose(); }}
-        initial={{ y: 24, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 24, opacity: 0 }}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="bg-background w-full max-w-lg rounded-3xl shadow-2xl flex flex-col min-h-0"
-        style={{ maxHeight: 'min(86dvh, calc(100dvh - 32px))', touchAction: 'pan-y' }}
+        className="bg-background w-full max-w-lg rounded-t-3xl rounded-b-none shadow-2xl flex flex-col min-h-0"
+        style={{ maxHeight: '90dvh', touchAction: 'none' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle */}
@@ -471,7 +471,7 @@ function ProductForm({ product, onSave, onClose, isSaving = false }: ProductForm
           </div>
 
           {/* Sticky footer — tombol simpan */}
-          <div className="flex-shrink-0 px-6 pb-8 pt-4" style={{ borderTop: '1px solid hsl(var(--border) / 0.4)' }}>
+          <div className="flex-shrink-0 px-6 pt-4" style={{ borderTop: '1px solid hsl(var(--border) / 0.4)', paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
             <button
               type="submit"
               disabled={isSaving}
