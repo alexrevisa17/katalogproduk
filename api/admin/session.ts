@@ -1,7 +1,4 @@
-import { isAdminAuthenticated } from "../../src/server/api/admin/_auth";
-import type { Request, Response } from "express";
+import app from "../../dist/server.bundle.mjs";
 
-export default function handler(req: Request, res: Response) {
-  res.setHeader("Cache-Control", "no-store");
-  res.status(200).json({ authenticated: isAdminAuthenticated(req) });
-}
+// Route admin session through the same compiled Express app as the main API.
+export default app;
