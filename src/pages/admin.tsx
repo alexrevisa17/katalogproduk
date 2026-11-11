@@ -134,7 +134,11 @@ function ImageInput({ label, hint, hintColor, value, onChange }: ImageInputProps
           const parsed = JSON.parse(raw) as { message?: string; error?: string };
           detail = parsed.message || parsed.error || raw;
         } catch {}
-        throw new Error(detail.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180) || `Upload ke Supabase Storage gagal (HTTP ${uploadResponse.status})`);
+        const endpoint = new URL(signed.uploadUrl);
+        const serverDetail = detail.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+        throw new Error(
+          `${serverDetail || 'Upload ke Supabase Storage gagal'} (HTTP ${uploadResponse.status}; ${endpoint.host}${endpoint.pathname})`
+        );
       }
       const json = { url: signed.publicUrl };
 
