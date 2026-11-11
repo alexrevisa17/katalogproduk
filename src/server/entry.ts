@@ -10,6 +10,7 @@ import uploadPost from "./api/upload/POST";
 import storeConfigGet from "./api/store-config/GET";
 import storeConfigPut from "./api/store-config/PUT";
 import { isAdminAuthenticated, loginAdmin, logoutAdmin } from "./api/admin/_auth";
+import { createSupabaseSignedImageUpload } from "./supabase";
 import productsGet from "./api/products/GET";
 import productsPost from "./api/products/POST";
 import productsDelete from "./api/products/DELETE";
@@ -267,6 +268,22 @@ app.post("/api/admin/login", loginAdmin);
 app.get("/api/admin/session", (req, res) => res.json({ authenticated: isAdminAuthenticated(req) }));
 app.post("/api/admin/logout", logoutAdmin);
 app.post("/api/upload", (req, res, next) => { if (!isAdminAuthenticated(req)) { res.status(401).json({ error: "Sesi admin tidak valid." }); return; } next(); }, uploadPost);
+app.post("/api/upload/sign", async (req, res) => {
+  if (!isAdminAuthenticated(req)) { res.status(401).json({ error: "Sesi admin tidak valid." }); return; }
+  const mime = typeof req.body?.mime === "string" ? req.body.mime : "";
+  if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mime)) {
+    res.status(400).json({ error: "Format gambar harus JPG, PNG, WebP, atau GIF." });
+    return;
+  }
+  try {
+    const result = await createSupabaseSignedImageUpload(mime);
+    res.setHeader("Cache-Control", "no-store");
+    res.json(result);
+  } catch (error) {
+    console.error("Supabase signed image upload failed", error);
+    res.status(503).json({ error: "Tidak dapat menyiapkan upload Supabase Storage." });
+  }
+});
 
 app.get("/api/store-config", storeConfigGet);
 app.put("/api/store-config", (req, res, next) => { if (!isAdminAuthenticated(req)) { res.status(401).json({ error: "Sesi admin tidak valid." }); return; } next(); }, storeConfigPut);
