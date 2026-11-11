@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Bang Pray Store",
   "short_name": "Bang Pray",
   "description": "Top up Mobile Legends, Free Fire, dan Roblox.",
@@ -9,6 +10,7 @@
   "orientation": "portrait",
   "background_color": "#07111f",
   "theme_color": "#087bff",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/pwa-icon-192.png",
@@ -20,7 +22,7 @@
       "src": "/pwa-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

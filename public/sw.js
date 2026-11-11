@@ -1,27 +1,21 @@
-const CACHE_NAME = 'bang-pray-store-v1';
-const APP_SHELL = [
-  '/',
-  '/manifest.webmanifest',
-  '/pwa-icon.svg',
-  '/pwa-icon-192.png',
-  '/pwa-icon-512.png',
-  '/pwa-icon-180.png',
-];
+const CACHE_NAME = 'bang-pray-store-v3';
+const APP_SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/pwa-icon-192.png', '/pwa-icon-512.png'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    // Cache each asset independently; a temporary fetch failure must not block installation.
+    await Promise.allSettled(APP_SHELL.map(url => cache.add(url)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', event => {
@@ -30,32 +24,37 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).then(response => {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
         if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('/', copy));
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put('/', response.clone());
         }
         return response;
-      }).catch(() => caches.match('/'))
-    );
+      } catch {
+        return (await caches.match('/')) || Response.error();
+      }
+    })());
     return;
   }
 
   const isAppAsset = url.pathname.startsWith('/assets/')
     || url.pathname === '/manifest.webmanifest'
-    || url.pathname.startsWith('/pwa-icon-')
-    || url.pathname === '/pwa-icon.svg';
+    || url.pathname === '/pwa-icon-192.png'
+    || url.pathname === '/pwa-icon-512.png'
+    || url.pathname === '/favicon.svg';
 
   if (isAppAsset) {
-    event.respondWith(
-      caches.match(request).then(cached => cached || fetch(request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-        }
-        return response;
-      }))
-    );
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, response.clone());
+      }
+      return response;
+    })());
   }
 });
